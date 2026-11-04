@@ -1,7 +1,11 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import '../globals.css'
-import { locales } from './dictionaries'
+import { getDictionary, locales } from './dictionaries'
+import { AuthProvider } from '@/hooks/useCurrentUser'
+import { AuthModalProvider } from '@/components/auth/AuthModal'
+import { AppShell } from '@/components/layout/AppShell'
 
 const geistSans = localFont({
   src: [
@@ -36,12 +40,24 @@ export default async function RootLayout({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params
+  const dict = await getDictionary(lang)
+
   return (
     <html
       lang={lang}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>
+          <AuthModalProvider lang={lang} dict={dict}>
+            <Suspense fallback={<div className="min-h-screen bg-background" />}>
+              <AppShell lang={lang} dict={dict}>
+                {children}
+              </AppShell>
+            </Suspense>
+          </AuthModalProvider>
+        </AuthProvider>
+      </body>
     </html>
   )
 }

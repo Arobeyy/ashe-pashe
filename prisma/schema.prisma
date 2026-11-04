@@ -1,0 +1,155 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  avatarUrl    String?
+  coverUrl     String?  // Profile banner background photo
+
+  // General & Educational Profile
+  occupation   String?  @default("Student") // "Student", "Job Holder", "Landlord", etc.
+  education    String?  // Optional: e.g. "University of Dhaka" or "College / Degree"
+  location     String?  // e.g. "Mirpur, Dhaka"
+  bio          String?
+  interests    String   @default("[]") // Serialized JSON string array: ["CSE", "Photography", "Football"]
+
+  role         String   @default("USER") // "USER" | "ADMIN"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  listings        AccommodationListing[]
+  comments        Comment[]
+  savedListings   SavedListing[]
+  filedReports    Report[]               @relation("UserFiledReports")
+  reviewedReports Report[]               @relation("AdminReviewedReports")
+
+  @@map("users")
+}
+
+model AccommodationListing {
+  id            String   @id @default(cuid())
+  ownerId       String
+  title         String
+  description   String
+  monthlyRent   Int
+  billsIncluded Boolean  @default(false)
+
+  // Location
+  area          String
+  address       String
+  latitude      Float
+  longitude     Float
+
+  // Classification, Tenancy & Preferences
+  accommodationType String // "SEAT" | "ROOM" | "FLAT"
+  genderPreference  String @default("ANY") // "MALE" | "FEMALE" | "ANY"
+  tenantType        String @default("BACHELOR") // "BACHELOR" | "FAMILY" | "ANY"
+
+  // Facilities (JSON array string containing pre-selected & custom tags)
+  facilities        String @default("[]") // e.g. '["wifi", "kitchen", "attached bath"]'
+
+  // Flat Information (Collapsible in UI, applicable to all accommodation types)
+  totalRooms     Int?
+  totalWashrooms Int?
+  balconies      Int?
+  floorLevel     Int?
+
+  // Status & Lifecycle
+  availableFrom      DateTime
+  availabilityStatus String    @default("AVAILABLE") // "AVAILABLE" | "UNAVAILABLE" | "RENTED" | "HIDDEN"
+  moderationStatus   String    @default("APPROVED")  // "APPROVED" | "PENDING" | "FLAGGED" | "REJECTED"
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relationships
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  photos       ListingPhoto[]
+  comments     Comment[]
+  savedByUsers SavedListing[]
+  reports      Report[]
+
+  @@index([ownerId])
+  @@index([area])
+  @@index([monthlyRent])
+  @@index([genderPreference])
+  @@index([tenantType])
+  @@index([availabilityStatus])
+  @@index([latitude, longitude])
+  @@map("accommodation_listings")
+}
+
+model ListingPhoto {
+  id           String   @id @default(cuid())
+  listingId    String
+  imageUrl     String
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  listing AccommodationListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_photos")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  listingId String
+  authorId  String
+  content   String
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing AccommodationListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  author  User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing AccommodationListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@map("saved_listings")
+}
+
+model Report {
+  id           String    @id @default(cuid())
+  reporterId   String
+  listingId    String
+  reason       String    // "SCAM" | "INACCURATE" | "NO_LONGER_AVAILABLE" | "DUPLICATE" | "INAPPROPRIATE" | "OTHER"
+  details      String?
+  status       String    @default("OPEN") // "OPEN" | "RESOLVED" | "DISMISSED"
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  reporter   User                 @relation("UserFiledReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  listing    AccommodationListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reviewedBy User?                @relation("AdminReviewedReports", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([listingId])
+  @@index([status])
+  @@map("reports")
+}
+
