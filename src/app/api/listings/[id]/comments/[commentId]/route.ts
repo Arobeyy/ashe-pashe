@@ -20,7 +20,14 @@ export async function DELETE(
     const { id, commentId } = await context.params
     const comment = await db.comment.findUnique({
       where: { id: commentId },
-      select: { id: true, authorId: true, listingId: true },
+      select: {
+        id: true,
+        authorId: true,
+        listingId: true,
+        listing: {
+          select: { ownerId: true },
+        },
+      },
     })
 
     if (!comment || comment.listingId !== id) {
@@ -28,8 +35,9 @@ export async function DELETE(
     }
 
     const isAuthor = comment.authorId === session.userId
+    const isListingOwner = comment.listing.ownerId === session.userId
     const isAdmin = session.role === "ADMIN"
-    if (!isAuthor && !isAdmin) {
+    if (!isAuthor && !isListingOwner && !isAdmin) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
 

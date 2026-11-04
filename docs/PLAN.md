@@ -156,8 +156,8 @@
 | 8-A | `POST /api/listings/[id]/comments` — auth required | ✅ |
 | 8-B | `DELETE /api/listings/[id]/comments/[commentId]` — author or admin | ✅ |
 | 8-C | `POST /api/reports` — auth required | ✅ |
-| 8-D | `GET /api/reports` — admin only, paginated, filtered by `status` | ⬜ |
-| 8-E | `PATCH /api/reports/[id]` — admin only; resolve or dismiss | ⬜ |
+| 8-D | `GET /api/reports` — admin only, paginated, filtered by `status` | ✅ |
+| 8-E | `PATCH /api/reports/[id]` — admin only; resolve or dismiss | ✅ |
 
 ---
 

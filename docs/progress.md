@@ -17,7 +17,7 @@
 | **Phase 5** | Feed Page (Home UI) | ✅ Completed |
 | **Phase 6** | Search & Filter Page | ✅ Completed |
 | **Phase 7** | Listing Detail Page | ✅ Completed |
-| **Phase 8** | Comments & Reports API | 🔄 In Progress (Comments & Report Create Done) |
+| **Phase 8** | Comments & Reports API | ✅ Completed |
 | **Phase 9** | Post a Listing (Creation Flow) | ⬜ Todo |
 | **Phase 10** | Saved Listings | ⬜ Todo |
 | **Phase 11** | User Profile | ⬜ Todo |
@@ -126,8 +126,17 @@
   * **Desktop (≥ 768px):** 2-column layout (wide media + details on left, sticky pricing, host card, and actions on right).
   * **Mobile (< 768px):** Touch-friendly single column with a fixed bottom sticky pricing and action bar (`bottom-16` above bottom navigation) with ≥ 44px tap targets.
 
+### Phase 8 — Comments & Reports API
+* `POST /api/listings/[id]/comments`: Authenticated comment submission with character limits (max 1000) and author metadata response.
+* `GET /api/listings/[id]/comments`: Public retrieval of active comments for a given listing.
+* `DELETE /api/listings/[id]/comments/[commentId]`: Authorization guard allowing comment author, listing owner, or platform admin to delete.
+* `POST /api/reports`: Authenticated report creation supporting enumerated reasons (`SCAM`, `INACCURATE`, `NO_LONGER_AVAILABLE`, `DUPLICATE`, `INAPPROPRIATE`, `OTHER`) with listing existence validation.
+* `GET /api/reports`: Admin-only paginated moderation queue with status filtering (`OPEN`, `RESOLVED`, `DISMISSED`, `ALL`), including reporter, listing thumbnail, and reviewer relations.
+* `GET /api/reports/[id]`: Secured detail lookup accessible only by the filing reporter or platform admin.
+* `PATCH /api/reports/[id]`: Admin-only moderation action to resolve or dismiss reports, automatically recording reviewer ID and timestamp.
+
 ---
 
 ## 🚀 Immediate Next Step
-* **Phase 8 (Remaining Admin Endpoints) & Phase 9 — Post a Listing:** Build multi-step listing submission flow with Leaflet map pin picker and photo uploads.
+* **Phase 9 — Post a Listing:** Build multi-step listing submission flow with Leaflet map pin picker and photo uploads.
 

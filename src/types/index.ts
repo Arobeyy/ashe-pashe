@@ -20,6 +20,50 @@ export type ReportReason =
 
 export type ReportStatus = "OPEN" | "RESOLVED" | "DISMISSED"
 
+export type ReportItem = {
+  id: string
+  listingId: string
+  reporterId: string
+  reason: ReportReason
+  details: string | null
+  status: ReportStatus
+  reviewedById: string | null
+  reviewedAt: string | null
+  createdAt: string
+  reporter: {
+    id: string
+    name: string
+    email: string
+    avatarUrl: string | null
+  }
+  listing: {
+    id: string
+    title: string
+    area: string
+    address: string
+    monthlyRent: number
+    accommodationType: AccommodationType
+    availabilityStatus: AvailabilityStatus
+    moderationStatus: ModerationStatus
+    owner: {
+      id: string
+      name: string
+      email: string
+      avatarUrl: string | null
+    }
+    photos?: { imageUrl: string }[]
+  }
+  reviewedBy?: {
+    id: string
+    name: string
+    email: string
+  } | null
+}
+
+export type UpdateReportInput = {
+  status: ReportStatus
+}
+
 export type SortOption =
   | "nearest"
   | "newest"

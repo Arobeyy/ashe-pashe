@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
-import type { ApiResponse, ReportReason } from "@/types"
+import type { Prisma } from "@prisma/client"
+import type {
+  AccommodationType,
+  ApiResponse,
+  AvailabilityStatus,
+  ModerationStatus,
+  PaginationMeta,
+  ReportItem,
+  ReportReason,
+  ReportStatus,
+} from "@/types"
 
 const VALID_REASONS: ReportReason[] = [
   "SCAM",
@@ -11,6 +21,134 @@ const VALID_REASONS: ReportReason[] = [
   "INAPPROPRIATE",
   "OTHER",
 ]
+
+const VALID_STATUSES: ReportStatus[] = ["OPEN", "RESOLVED", "DISMISSED"]
+
+export async function GET(
+  request: Request,
+): Promise<NextResponse<ApiResponse<ReportItem[]>>> {
+  try {
+    const session = await getSession(request)
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (session.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Forbidden: Admin access required" }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const statusParam = searchParams.get("status")?.toUpperCase()
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20))
+    const skip = (page - 1) * limit
+
+    const where: Prisma.ReportWhereInput = {}
+    if (statusParam && statusParam !== "ALL") {
+      if (!VALID_STATUSES.includes(statusParam as ReportStatus)) {
+        return NextResponse.json(
+          { success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}, ALL` },
+          { status: 400 },
+        )
+      }
+      where.status = statusParam
+    } else if (!statusParam) {
+      where.status = "OPEN"
+    }
+
+    const [reports, total] = await Promise.all([
+      db.report.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          reporter: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+          listing: {
+            select: {
+              id: true,
+              title: true,
+              area: true,
+              address: true,
+              monthlyRent: true,
+              accommodationType: true,
+              availabilityStatus: true,
+              moderationStatus: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatarUrl: true,
+                },
+              },
+              photos: {
+                take: 1,
+                orderBy: { displayOrder: "asc" },
+                select: { imageUrl: true },
+              },
+            },
+          },
+          reviewedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      db.report.count({ where }),
+    ])
+
+    const totalPages = Math.ceil(total / limit) || 1
+    const pagination: PaginationMeta = {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasMore: page < totalPages,
+    }
+
+    const data: ReportItem[] = reports.map((r) => ({
+      id: r.id,
+      listingId: r.listingId,
+      reporterId: r.reporterId,
+      reason: r.reason as ReportReason,
+      details: r.details,
+      status: r.status as ReportStatus,
+      reviewedById: r.reviewedById,
+      reviewedAt: r.reviewedAt?.toISOString() || null,
+      createdAt: r.createdAt.toISOString(),
+      reporter: r.reporter,
+      listing: {
+        id: r.listing.id,
+        title: r.listing.title,
+        area: r.listing.area,
+        address: r.listing.address,
+        monthlyRent: r.listing.monthlyRent,
+        accommodationType: r.listing.accommodationType as AccommodationType,
+        availabilityStatus: r.listing.availabilityStatus as AvailabilityStatus,
+        moderationStatus: r.listing.moderationStatus as ModerationStatus,
+        owner: r.listing.owner,
+        photos: r.listing.photos,
+      },
+      reviewedBy: r.reviewedBy,
+    }))
+
+    return NextResponse.json({ success: true, data, pagination })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error"
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
+  }
+}
 
 export async function POST(
   request: Request,
@@ -60,13 +198,15 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: { id: report.id, listingId: report.listingId },
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        success: true,
+        data: { id: report.id, listingId: report.listingId },
+      },
+      { status: 201 },
+    )
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-
