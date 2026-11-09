@@ -148,6 +148,19 @@ This document tracks design, UX, and architectural decisions requiring user/stak
 
 ---
 
+### DEC-012: Private Messaging & Photo Sharing Between Users
+* **Phase:** User Messaging Feature
+* **Context:** Providing private 1-on-1 messaging for users to communicate, share accommodation photos, and exchange contact information securely.
+* **Options & Decisions:**
+  * **Navigation Placement:** Expanded Mobile bottom navigation to 5 tabs (Feed, Search, Post [+], Messages, Profile) with real-time unread badge counter, and Desktop sidebar link.
+  * **Listing Context Header:** Pinned compact listing preview card (title, rent, photo thumbnail, and link) at the top of the chat thread when inquiry initiates from a listing.
+  * **Host Contact Actions:** If host phone number is visible (`showContactInfo === true`), show both "Message Host" and "Call / Contact". If host hides phone number, display only "Message Host" so users can still communicate privately without exposing personal phone numbers.
+* **Status:** `✅ Decided`
+* **Choice:** 5-tab Mobile bottom bar + pinned listing context card + conditional dual contact actions.
+* **Rationale:** Maximizes accessibility and privacy for students and hosts while enabling safe photo and contact exchange within the application.
+
+---
+
 ## 🟢 Previously Decided
 
 | ID | Topic | Decision | Date |

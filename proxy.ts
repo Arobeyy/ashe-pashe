@@ -67,6 +67,7 @@ export async function proxy(request: NextRequest) {
       (pathname.includes("/comments") && (request.method === "POST" || request.method === "DELETE")) ||
       (pathname.startsWith("/api/reports") && (request.method === "POST" || request.method === "GET" || request.method === "PATCH")) ||
       pathname.startsWith("/api/saved") ||
+      pathname.startsWith("/api/conversations") ||
       (pathname.startsWith("/api/users/") && request.method === "PATCH") ||
       pathname.startsWith("/api/upload")
 
@@ -112,6 +113,7 @@ export async function proxy(request: NextRequest) {
   const isProtectedPage =
     pageRoute === "/post" ||
     pageRoute === "/saved" ||
+    pageRoute.startsWith("/messages") ||
     pageRoute === "/profile/edit"
 
   const user = await verifyAuth(request)

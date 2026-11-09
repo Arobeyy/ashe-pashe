@@ -211,4 +211,62 @@ export type ApiResponse<T> = {
   pagination?: PaginationMeta
 }
 
+export type MessageItem = {
+  id: string
+  conversationId: string
+  senderId: string
+  content: string
+  photoUrl: string | null
+  isRead: boolean
+  createdAt: string
+  sender?: {
+    id: string
+    name: string
+    avatarUrl: string | null
+  }
+}
+
+export type ConversationSnippetListing = {
+  id: string
+  title: string
+  monthlyRent: number
+  area: string
+  imageUrl: string | null
+}
+
+export type ConversationSummary = {
+  id: string
+  otherUser: {
+    id: string
+    name: string
+    avatarUrl: string | null
+    occupation: string | null
+  }
+  listing?: ConversationSnippetListing | null
+  lastMessage?: {
+    content: string
+    photoUrl: string | null
+    createdAt: string
+    senderId: string
+    isRead: boolean
+  } | null
+  unreadCount: number
+  updatedAt: string
+}
+
+export type ConversationDetail = {
+  id: string
+  otherUser: {
+    id: string
+    name: string
+    avatarUrl: string | null
+    occupation: string | null
+    education: string | null
+    location: string | null
+  }
+  listing?: ConversationSnippetListing | null
+  messages: MessageItem[]
+}
+
+
 

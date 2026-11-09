@@ -18,6 +18,7 @@
 | **Phase 6** | Search & Filter Page | ✅ Completed |
 | **Phase 7** | Listing Detail Page | ✅ Completed |
 | **Phase 8** | Comments & Reports API | ✅ Completed |
+| **Messaging** | Private Messaging & Photo Sharing (DEC-012) | ✅ Completed |
 | **Phase 9** | Post a Listing (Creation Flow) | ⬜ Todo |
 | **Phase 10** | Saved Listings | ⬜ Todo |
 | **Phase 11** | User Profile | ⬜ Todo |
@@ -135,6 +136,21 @@
 * `GET /api/reports`: Admin-only paginated moderation queue with status filtering (`OPEN`, `RESOLVED`, `DISMISSED`, `ALL`), including reporter, listing thumbnail, and reviewer relations.
 * `GET /api/reports/[id]`: Secured detail lookup accessible only by the filing reporter or platform admin.
 * `PATCH /api/reports/[id]`: Admin-only moderation action to resolve or dismiss reports, automatically recording reviewer ID and timestamp.
+
+### Private Messaging & Photo Sharing (DEC-012)
+* **Data Layer (`Conversation` & `Message`):**
+  * Indexed Prisma models in SQLite (`prisma/dev.db`) storing participant IDs, listing context relation, message texts, and local disk photo uploads.
+* **Backend API (`/api/conversations`):**
+  * `GET /api/conversations`: Returns user's conversations with other participant profile, latest message preview, unread count, and listing snippet.
+  * `POST /api/conversations`: Starts or finds an existing 1-on-1 thread with optional listing inquiry reference.
+  * `GET /api/conversations/[id]`: Loads full conversation thread, participant details, and marks unread messages as read.
+  * `POST /api/conversations/[id]/messages`: Handles text and multipart photo uploads saving to `public/uploads/messages/`.
+  * `GET /api/conversations/unread-count`: Lightweight badge count endpoint for real-time unread indicators.
+* **UI & Responsive Navigation:**
+  * **App Shell:** Expanded Mobile bottom navigation to 5 tabs (Feed, Search, Post [+], Messages, Profile) with live unread badge, and Desktop left sidebar link.
+  * **Listing Integration (`OwnerCard` & mobile bottom bar):** If host allows phone visibility, shows both "Message Host" and "Call / Contact"; if phone is hidden, shows only "Message Host" protecting resident privacy.
+  * **Inbox View (`/[lang]/messages` & `/[lang]/messages/[id]`):** Responsive 2-column layout on desktop (conversations list on left, active chat on right) and smooth screen switching on mobile.
+  * **Chat Thread (`ChatWindow` & `ListingContextCard`):** Pinned listing thumbnail and rent badge at top of thread, chronological message bubbles with lightbox photo viewer, image file attachment preview, and 3.5s auto-polling sync.
 
 ---
 

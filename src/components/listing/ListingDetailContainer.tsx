@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { ListingGallery } from "@/components/listing/ListingGallery"
 import { ListingDetailsSection } from "@/components/listing/ListingDetailsSection"
@@ -22,6 +23,7 @@ import {
   Calendar,
   Clock,
   Phone,
+  MessageCircle,
   Shield,
   Loader2,
 } from "lucide-react"
@@ -80,12 +82,42 @@ export function ListingDetailContainer({
   lang,
   dict,
 }: ListingDetailContainerProps) {
+  const router = useRouter()
   const [isSaved, setIsSaved] = React.useState<boolean>(Boolean(listing.isSaved))
   const [savedCount, setSavedCount] = React.useState<number>(listing.savedCount || 0)
   const [isSaving, setIsSaving] = React.useState(false)
   const [reportOpen, setReportOpen] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
   const [status, setStatus] = React.useState<AvailabilityStatus>(listing.availabilityStatus)
+  const [isStartingChat, setIsStartingChat] = React.useState(false)
+
+  const isOwner = currentUserId === listing.owner.id
+
+  const handleStartChat = async () => {
+    if (!currentUserId) {
+      router.push(`/${lang}/login?from=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
+    setIsStartingChat(true)
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientId: listing.owner.id,
+          listingId: listing.id,
+        }),
+      })
+      const data = await res.json()
+      if (data.success && data.data?.conversationId) {
+        router.push(`/${lang}/messages/${data.data.conversationId}`)
+      }
+    } catch (err) {
+      console.error("Failed to start chat:", err)
+    } finally {
+      setIsStartingChat(false)
+    }
+  }
 
   const handleSaveToggle = async () => {
     const nextSaved = !isSaved
@@ -318,6 +350,7 @@ export function ListingDetailContainer({
             {/* Owner Identity Card */}
             <OwnerCard
               owner={listing.owner}
+              listingId={listing.id}
               currentUserId={currentUserId}
               lang={lang}
               dict={dict}
@@ -362,31 +395,39 @@ export function ListingDetailContainer({
             </Button>
           </ActionGate>
 
-          {listing.owner.showContactInfo === false ? (
-            <Button
-              size="sm"
-              onClick={() => {
-                const el = document.getElementById("comments")
-                if (el) el.scrollIntoView({ behavior: "smooth" })
-              }}
-              className="h-10 px-4 rounded-xl font-bold bg-primary text-primary-foreground gap-1.5 shadow-xs"
-            >
-              <span>{dict.listing.contactPrivateAction ?? "Ask in Comments"}</span>
-            </Button>
-          ) : (
-            <ActionGate onUnauthenticated={() => {}}>
+          {!isOwner && (
+            <>
               <Button
                 size="sm"
-                onClick={() => {
-                  const phone = listing.owner.phone || "01712345678"
-                  window.location.href = `tel:${phone}`
-                }}
-                className="h-10 px-4 rounded-xl font-bold bg-primary text-primary-foreground gap-1.5 shadow-xs"
+                onClick={handleStartChat}
+                disabled={isStartingChat}
+                className="h-10 px-3.5 rounded-xl font-bold bg-primary text-primary-foreground gap-1.5 shadow-xs"
               >
-                <Phone className="size-4" />
-                <span>{dict.listing.contactOwner}</span>
+                {isStartingChat ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <MessageCircle className="size-4" />
+                )}
+                <span>{dict.listing.messageHost ?? "Message"}</span>
               </Button>
-            </ActionGate>
+
+              {listing.owner.showContactInfo !== false && (
+                <ActionGate onUnauthenticated={() => {}}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const phone = listing.owner.phone || "01712345678"
+                      window.location.href = `tel:${phone}`
+                    }}
+                    className="h-10 px-3 rounded-xl font-semibold border-border gap-1.5"
+                    aria-label={dict.listing.contactOwner}
+                  >
+                    <Phone className="size-4" />
+                  </Button>
+                </ActionGate>
+              )}
+            </>
           )}
         </div>
       </div>

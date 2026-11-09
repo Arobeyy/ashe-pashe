@@ -11,6 +11,7 @@ import {
   LogIn,
   LogOut,
   Bookmark,
+  MessageCircle,
   ShieldAlert,
   Globe,
 } from "lucide-react"
@@ -45,6 +46,8 @@ export function AppShell({ children, lang, dict }: AppShellProps) {
   const isProfileActive = pathname.startsWith(`/${lang}/profile`)
   const isSavedActive =
     pathname === `/${lang}/saved` || pathname.startsWith(`/${lang}/saved/`)
+  const isMessagesActive =
+    pathname === `/${lang}/messages` || pathname.startsWith(`/${lang}/messages/`)
   const isAdminActive =
     pathname === `/${lang}/admin` || pathname.startsWith(`/${lang}/admin/`)
   const isLoginActive =
@@ -53,6 +56,37 @@ export function AppShell({ children, lang, dict }: AppShellProps) {
   const postHref = user
     ? `/${lang}/post`
     : `/${lang}/login?from=${encodeURIComponent(`/${lang}/post`)}`
+
+  const messagesHref = user
+    ? `/${lang}/messages`
+    : `/${lang}/login?from=${encodeURIComponent(`/${lang}/messages`)}`
+
+  const [unreadCount, setUnreadCount] = React.useState<number>(0)
+
+  React.useEffect(() => {
+    if (!user) {
+      setUnreadCount(0)
+      return
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await fetch("/api/conversations/unread-count")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && typeof data.data?.unreadCount === "number") {
+            setUnreadCount(data.data.unreadCount)
+          }
+        }
+      } catch {
+        // Silently handle background counter errors
+      }
+    }
+
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 15000)
+    return () => clearInterval(interval)
+  }, [user, pathname])
 
   const switchLang = lang === "en" ? "bn" : "en"
   const switchLabel = lang === "en" ? "বাংলা" : "English"
@@ -155,6 +189,29 @@ export function AppShell({ children, lang, dict }: AppShellProps) {
               )}
             </Link>
           )}
+
+          <Link
+            href={messagesHref}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
+              isMessagesActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+            )}
+          >
+            <MessageCircle
+              className={cn(
+                "size-4 shrink-0",
+                isMessagesActive ? "text-primary" : "text-muted-foreground",
+              )}
+            />
+            <span className="flex-1">{dict?.nav?.messages ?? "Messages"}</span>
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
 
           {user?.role === "ADMIN" && (
             <Link
@@ -324,6 +381,26 @@ export function AppShell({ children, lang, dict }: AppShellProps) {
           >
             {dict?.nav?.post ?? "Post"}
           </span>
+        </Link>
+
+        <Link
+          href={messagesHref}
+          className={cn(
+            "flex-1 flex flex-col items-center justify-center h-full min-h-12 min-w-12 py-1 text-xs transition-colors",
+            isMessagesActive
+              ? "text-primary font-medium"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <div className="relative flex items-center justify-center">
+            <MessageCircle className="size-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-2.5 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-xs font-bold leading-none text-primary-foreground">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </div>
+          <span className="text-xs mt-1">{dict?.nav?.messages ?? "Messages"}</span>
         </Link>
 
         {user ? (
