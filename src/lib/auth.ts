@@ -56,22 +56,59 @@ export async function getSession(request?: Request): Promise<AuthTokenPayload | 
   }
 }
 
+type CookieSetOptions = {
+  httpOnly?: boolean
+  sameSite?: "lax" | "strict" | "none" | boolean
+  secure?: boolean
+  path?: string
+  maxAge?: number
+}
+
+type CookieCapableResponse = {
+  cookies: {
+    set: (name: string, value: string, options?: CookieSetOptions) => void
+    delete?: (name: string) => void
+  }
+}
+
 // Sets HttpOnly auth cookie for session token
-export async function setAuthCookie(token: string): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  })
+export async function setAuthCookie(token: string, response?: CookieCapableResponse): Promise<void> {
+  if (response?.cookies) {
+    response.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    return
+  }
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+  } catch {
+    // Graceful fallback when outside async cookies context
+  }
 }
 
 // Clears auth session cookie
-export async function clearAuthCookie(): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.delete(COOKIE_NAME)
+export async function clearAuthCookie(response?: CookieCapableResponse): Promise<void> {
+  if (response?.cookies?.delete) {
+    response.cookies.delete(COOKIE_NAME)
+    return
+  }
+  try {
+    const cookieStore = await cookies()
+    cookieStore.delete(COOKIE_NAME)
+  } catch {
+    // Graceful fallback when outside async cookies context
+  }
 }
 
 // Hashes plaintext password with salt rounds

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { getListings } from "@/lib/listings"
@@ -46,9 +46,9 @@ function parseFacilities(input: unknown): string {
   return "[]"
 }
 
-export async function GET(request: Request): Promise<NextResponse<ApiResponse<ListingCard[]>>> {
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<ListingCard[]>>> {
   try {
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl?.searchParams ?? new URL(request.url).searchParams
     const session = await getSession(request)
 
     const result = await getListings({
@@ -88,7 +88,7 @@ export async function GET(request: Request): Promise<NextResponse<ApiResponse<Li
   }
 }
 
-export async function POST(request: Request): Promise<NextResponse<ApiResponse<ListingCard>>> {
+export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<ListingCard>>> {
   try {
     const session = await getSession(request)
     if (!session) {
@@ -140,7 +140,11 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<L
         }
       }
     } else {
-      payload = (await request.json()) as CreateListingInput
+      try {
+        payload = (await request.json()) as CreateListingInput
+      } catch {
+        return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+      }
       if (Array.isArray(payload.photos)) {
         payload.photos.forEach((item, index) => {
           if (typeof item === "string" && item.trim()) {
@@ -244,7 +248,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<L
       availabilityStatus: created.availabilityStatus as ListingCard["availabilityStatus"],
       availableFrom: created.availableFrom.toISOString(),
       createdAt: created.createdAt.toISOString(),
-      photos: created.photos.map((p) => ({
+      photos: created.photos.map((p: { id: string; imageUrl: string; displayOrder: number }) => ({
         id: p.id,
         imageUrl: p.imageUrl,
         displayOrder: p.displayOrder,

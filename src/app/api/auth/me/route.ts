@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { ApiResponse, UserPublic } from "@/types"
 
-export async function GET(): Promise<NextResponse<ApiResponse<UserPublic | null>>> {
+export async function GET(request?: NextRequest): Promise<NextResponse<ApiResponse<UserPublic | null>>> {
   try {
-    const session = await getSession()
+    const session = await getSession(request)
     if (!session) {
       return NextResponse.json({ success: true, data: null })
     }
@@ -27,6 +27,16 @@ export async function GET(): Promise<NextResponse<ApiResponse<UserPublic | null>
       return NextResponse.json({ success: true, data: null })
     }
 
+    let parsedInterests: string[] = []
+    try {
+      const parsed = JSON.parse(user.interests || "[]")
+      if (Array.isArray(parsed)) {
+        parsedInterests = parsed.map((item) => String(item).trim()).filter(Boolean)
+      }
+    } catch {
+      parsedInterests = []
+    }
+
     const userPublic: UserPublic = {
       id: user.id,
       name: user.name,
@@ -38,7 +48,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<UserPublic | null>
       education: user.education,
       location: user.location,
       bio: user.bio,
-      interests: JSON.parse(user.interests || "[]"),
+      interests: parsedInterests,
       role: user.role as "USER" | "ADMIN",
       createdAt: user.createdAt.toISOString(),
       _count: user._count,
@@ -50,4 +60,3 @@ export async function GET(): Promise<NextResponse<ApiResponse<UserPublic | null>
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-

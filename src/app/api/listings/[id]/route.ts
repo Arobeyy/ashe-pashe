@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { getListingById } from "@/lib/listings"
@@ -11,7 +11,7 @@ type RouteContext = {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<ListingDetail>>> {
   try {
@@ -31,7 +31,7 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<{ id: string }>>> {
   try {

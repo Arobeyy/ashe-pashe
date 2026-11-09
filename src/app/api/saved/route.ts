@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { ApiResponse } from "@/types"
 
+type SavedListingItem = {
+  listingId: string
+}
+
 export async function POST(
-  request: Request,
+  request: NextRequest,
 ): Promise<NextResponse<ApiResponse<{ saved: boolean; listingId: string }>>> {
   try {
     const session = await getSession(request)
@@ -12,7 +16,13 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = (await request.json()) as { listingId?: string }
+    let body: { listingId?: string }
+    try {
+      body = (await request.json()) as { listingId?: string }
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+    }
+
     const listingId = body.listingId?.trim()
 
     if (!listingId) {
@@ -65,7 +75,7 @@ export async function POST(
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
 ): Promise<NextResponse<ApiResponse<string[]>>> {
   try {
     const session = await getSession(request)
@@ -73,18 +83,17 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const saved = await db.savedListing.findMany({
+    const saved: SavedListingItem[] = await db.savedListing.findMany({
       where: { userId: session.userId },
       select: { listingId: true },
     })
 
     return NextResponse.json({
       success: true,
-      data: saved.map((s) => s.listingId),
+      data: saved.map((s: SavedListingItem) => s.listingId),
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-

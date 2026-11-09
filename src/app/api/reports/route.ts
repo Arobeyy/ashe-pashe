@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { Prisma } from "@prisma/client"
@@ -13,6 +13,51 @@ import type {
   ReportStatus,
 } from "@/types"
 
+export type ReportWithRelationsPayload = Prisma.ReportGetPayload<{
+  include: {
+    reporter: {
+      select: {
+        id: true
+        name: true
+        email: true
+        avatarUrl: true
+      }
+    }
+    listing: {
+      select: {
+        id: true
+        title: true
+        area: true
+        address: true
+        monthlyRent: true
+        accommodationType: true
+        availabilityStatus: true
+        moderationStatus: true
+        owner: {
+          select: {
+            id: true
+            name: true
+            email: true
+            avatarUrl: true
+          }
+        }
+        photos: {
+          take: 1
+          orderBy: { displayOrder: "asc" }
+          select: { imageUrl: true }
+        }
+      }
+    }
+    reviewedBy: {
+      select: {
+        id: true
+        name: true
+        email: true
+      }
+    }
+  }
+}>
+
 const VALID_REASONS: ReportReason[] = [
   "SCAM",
   "INACCURATE",
@@ -25,7 +70,7 @@ const VALID_REASONS: ReportReason[] = [
 const VALID_STATUSES: ReportStatus[] = ["OPEN", "RESOLVED", "DISMISSED"]
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
 ): Promise<NextResponse<ApiResponse<ReportItem[]>>> {
   try {
     const session = await getSession(request)
@@ -37,13 +82,13 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Forbidden: Admin access required" }, { status: 403 })
     }
 
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl?.searchParams ?? new URL(request.url).searchParams
     const statusParam = searchParams.get("status")?.toUpperCase()
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1)
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20))
     const skip = (page - 1) * limit
 
-    const where: Prisma.ReportWhereInput = {}
+    const where: { status?: string } = {}
     if (statusParam && statusParam !== "ALL") {
       if (!VALID_STATUSES.includes(statusParam as ReportStatus)) {
         return NextResponse.json(
@@ -56,7 +101,7 @@ export async function GET(
       where.status = "OPEN"
     }
 
-    const [reports, total] = await Promise.all([
+    const [reports, total]: [ReportWithRelationsPayload[], number] = await Promise.all([
       db.report.findMany({
         where,
         skip,
@@ -117,7 +162,7 @@ export async function GET(
       hasMore: page < totalPages,
     }
 
-    const data: ReportItem[] = reports.map((r) => ({
+    const data: ReportItem[] = reports.map((r: ReportWithRelationsPayload) => ({
       id: r.id,
       listingId: r.listingId,
       reporterId: r.reporterId,
@@ -151,7 +196,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
 ): Promise<NextResponse<ApiResponse<{ id: string; listingId: string }>>> {
   try {
     const session = await getSession(request)
@@ -159,10 +204,20 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = (await request.json()) as {
+    let body: {
       listingId?: string
       reason?: ReportReason
       details?: string
+    }
+
+    try {
+      body = (await request.json()) as {
+        listingId?: string
+        reason?: ReportReason
+        details?: string
+      }
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
     }
 
     const listingId = body.listingId?.trim()

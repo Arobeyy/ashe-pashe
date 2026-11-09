@@ -1,14 +1,27 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
+import type { Prisma } from "@prisma/client"
 import type { ApiResponse, CommentItem } from "@/types"
 
 type RouteContext = {
   params: Promise<{ id: string }>
 }
 
+type CommentWithAuthorPayload = Prisma.CommentGetPayload<{
+  include: {
+    author: {
+      select: {
+        id: true
+        name: true
+        avatarUrl: true
+      }
+    }
+  }
+}>
+
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<CommentItem[]>>> {
   try {
@@ -22,7 +35,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Listing not found" }, { status: 404 })
     }
 
-    const comments = await db.comment.findMany({
+    const comments: CommentWithAuthorPayload[] = await db.comment.findMany({
       where: { listingId: id, isHidden: false },
       orderBy: { createdAt: "asc" },
       include: {
@@ -36,7 +49,7 @@ export async function GET(
       },
     })
 
-    const data: CommentItem[] = comments.map((c) => ({
+    const data: CommentItem[] = comments.map((c: CommentWithAuthorPayload) => ({
       id: c.id,
       listingId: c.listingId,
       authorId: c.authorId,
@@ -53,7 +66,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<CommentItem>>> {
   try {
@@ -63,7 +76,14 @@ export async function POST(
     }
 
     const { id } = await context.params
-    const body = (await request.json()) as { content?: string }
+
+    let body: { content?: string }
+    try {
+      body = (await request.json()) as { content?: string }
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+    }
+
     const content = body.content?.trim()
 
     if (!content) {
@@ -83,7 +103,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Listing not found" }, { status: 404 })
     }
 
-    const created = await db.comment.create({
+    const created: CommentWithAuthorPayload = await db.comment.create({
       data: {
         listingId: id,
         authorId: session.userId,
@@ -115,4 +135,3 @@ export async function POST(
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-

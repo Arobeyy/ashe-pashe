@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { ApiResponse, AvailabilityStatus, ListingCard, UpdateListingStatusInput } from "@/types"
@@ -10,7 +10,7 @@ type RouteContext = {
 const VALID_STATUSES: AvailabilityStatus[] = ["AVAILABLE", "UNAVAILABLE", "RENTED", "HIDDEN"]
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<ListingCard>>> {
   try {
@@ -34,7 +34,12 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
 
-    const body = (await request.json()) as UpdateListingStatusInput
+    let body: UpdateListingStatusInput
+    try {
+      body = (await request.json()) as UpdateListingStatusInput
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+    }
     if (!body.availabilityStatus || !VALID_STATUSES.includes(body.availabilityStatus)) {
       return NextResponse.json(
         { success: false, error: `Invalid availabilityStatus. Must be: ${VALID_STATUSES.join(", ")}` },

@@ -64,8 +64,8 @@ export async function proxy(request: NextRequest) {
       (pathname === "/api/listings" && request.method === "POST") ||
       (pathname.startsWith("/api/listings/") && pathname.endsWith("/status") && request.method === "PATCH") ||
       (pathname.startsWith("/api/listings/") && request.method === "DELETE") ||
-      (pathname.includes("/comments") && request.method === "POST") ||
-      (pathname === "/api/reports" && request.method === "POST") ||
+      (pathname.includes("/comments") && (request.method === "POST" || request.method === "DELETE")) ||
+      (pathname.startsWith("/api/reports") && (request.method === "POST" || request.method === "GET" || request.method === "PATCH")) ||
       pathname.startsWith("/api/saved") ||
       (pathname.startsWith("/api/users/") && request.method === "PATCH") ||
       pathname.startsWith("/api/upload")
@@ -79,7 +79,8 @@ export async function proxy(request: NextRequest) {
 
     // Admin-only API routes
     const isAdminApi =
-      (pathname === "/api/reports" && (request.method === "GET" || request.method === "PATCH")) ||
+      (pathname === "/api/reports" && request.method === "GET") ||
+      (pathname.startsWith("/api/reports") && request.method === "PATCH") ||
       pathname.startsWith("/api/admin")
 
     if (isAdminApi && (!user || user.role !== "ADMIN")) {

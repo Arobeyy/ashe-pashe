@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { comparePassword, signToken, setAuthCookie } from "@/lib/auth"
 import type { ApiResponse, UserPublic } from "@/types"
@@ -8,9 +8,15 @@ type LoginRequestBody = {
   password: string
 }
 
-export async function POST(request: Request): Promise<NextResponse<ApiResponse<UserPublic>>> {
+export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<UserPublic>>> {
   try {
-    const body: LoginRequestBody = await request.json()
+    let body: LoginRequestBody
+    try {
+      body = (await request.json()) as LoginRequestBody
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+    }
+
     const { email, password } = body
 
     if (!email || !password) {
@@ -55,7 +61,15 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<U
       role: user.role as "USER" | "ADMIN",
     })
 
-    await setAuthCookie(token)
+    let parsedInterests: string[] = []
+    try {
+      const parsed = JSON.parse(user.interests || "[]")
+      if (Array.isArray(parsed)) {
+        parsedInterests = parsed.map((item) => String(item).trim()).filter(Boolean)
+      }
+    } catch {
+      parsedInterests = []
+    }
 
     const userPublic: UserPublic = {
       id: user.id,
@@ -68,16 +82,17 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<U
       education: user.education,
       location: user.location,
       bio: user.bio,
-      interests: JSON.parse(user.interests || "[]"),
+      interests: parsedInterests,
       role: user.role as "USER" | "ADMIN",
       createdAt: user.createdAt.toISOString(),
       _count: user._count,
     }
 
-    return NextResponse.json({ success: true, data: userPublic })
+    const response = NextResponse.json({ success: true, data: userPublic })
+    await setAuthCookie(token, response)
+    return response
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-

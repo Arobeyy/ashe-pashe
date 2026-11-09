@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
+import type { ReportWithRelationsPayload } from "../route"
 import type {
   AccommodationType,
   ApiResponse,
@@ -19,7 +20,7 @@ type RouteContext = {
 const ALLOWED_PATCH_STATUSES: ReportStatus[] = ["RESOLVED", "DISMISSED", "OPEN"]
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<ReportItem>>> {
   try {
@@ -29,7 +30,7 @@ export async function GET(
     }
 
     const { id } = await context.params
-    const report = await db.report.findUnique({
+    const report: ReportWithRelationsPayload | null = await db.report.findUnique({
       where: { id },
       include: {
         reporter: {
@@ -117,7 +118,7 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<ReportItem>>> {
   try {
@@ -131,7 +132,13 @@ export async function PATCH(
     }
 
     const { id } = await context.params
-    const body = (await request.json()) as UpdateReportInput
+
+    let body: UpdateReportInput
+    try {
+      body = (await request.json()) as UpdateReportInput
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 })
+    }
 
     if (!body.status || !ALLOWED_PATCH_STATUSES.includes(body.status)) {
       return NextResponse.json(
@@ -150,7 +157,7 @@ export async function PATCH(
     }
 
     const isClosing = body.status === "RESOLVED" || body.status === "DISMISSED"
-    const updated = await db.report.update({
+    const updated: ReportWithRelationsPayload = await db.report.update({
       where: { id },
       data: {
         status: body.status,
@@ -233,4 +240,3 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-

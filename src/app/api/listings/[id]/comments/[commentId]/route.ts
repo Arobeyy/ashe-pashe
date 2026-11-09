@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { ApiResponse } from "@/types"
@@ -8,7 +8,7 @@ type RouteContext = {
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse<ApiResponse<{ id: string }>>> {
   try {
@@ -51,4 +51,3 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
-
