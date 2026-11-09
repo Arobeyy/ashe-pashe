@@ -239,11 +239,13 @@ export function ListingDetailContainer({
             area={listing.area}
             address={listing.address}
             dict={dict}
+            locationPrecision={listing.locationPrecision}
           />
 
           {/* Interactive Comments & Discussions Thread */}
           <CommentsSection
             listingId={listing.id}
+            listingOwnerId={listing.ownerId}
             initialComments={listing.comments}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
@@ -316,6 +318,7 @@ export function ListingDetailContainer({
             {/* Owner Identity Card */}
             <OwnerCard
               owner={listing.owner}
+              currentUserId={currentUserId}
               lang={lang}
               dict={dict}
             />
@@ -359,19 +362,32 @@ export function ListingDetailContainer({
             </Button>
           </ActionGate>
 
-          <ActionGate onUnauthenticated={() => {}}>
+          {listing.owner.showContactInfo === false ? (
             <Button
               size="sm"
               onClick={() => {
-                const telLink = "tel:+8801712345678"
-                window.location.href = telLink
+                const el = document.getElementById("comments")
+                if (el) el.scrollIntoView({ behavior: "smooth" })
               }}
               className="h-10 px-4 rounded-xl font-bold bg-primary text-primary-foreground gap-1.5 shadow-xs"
             >
-              <Phone className="size-4" />
-              <span>{dict.listing.contactOwner}</span>
+              <span>{dict.listing.contactPrivateAction ?? "Ask in Comments"}</span>
             </Button>
-          </ActionGate>
+          ) : (
+            <ActionGate onUnauthenticated={() => {}}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const phone = listing.owner.phone || "01712345678"
+                  window.location.href = `tel:${phone}`
+                }}
+                className="h-10 px-4 rounded-xl font-bold bg-primary text-primary-foreground gap-1.5 shadow-xs"
+              >
+                <Phone className="size-4" />
+                <span>{dict.listing.contactOwner}</span>
+              </Button>
+            </ActionGate>
+          )}
         </div>
       </div>
 

@@ -106,8 +106,9 @@ This document tracks design, UX, and architectural decisions requiring user/stak
 * **Options:**
   * **Option A (Recommended & Implemented): Full-Width Main Carousel with Horizontal Thumbnail Strip.** Guarantees consistent high visual quality regardless of whether a student uploads 1 photo or 8 photos. Includes a fullscreen lightbox dialog for in-depth viewing.
   * **Option B: Airbnb-Style Multi-Grid (1 large photo + 4 small grid photos).** Requires at least 5 photos to render without empty gaps or asymmetrical layout jumps.
-* **Status:** `🟡 Pending Review`
-* **Choice:** *(Specify Option A or Option B)*
+* **Status:** `✅ Decided`
+* **Choice:** Option A (Full-Width Main Carousel with Horizontal Thumbnail Strip)
+* **Rationale:** Guarantees consistent high visual quality regardless of whether a student uploads 1 photo or 8 photos. Includes a fullscreen lightbox dialog for in-depth viewing.
 
 ---
 
@@ -115,10 +116,11 @@ This document tracks design, UX, and architectural decisions requiring user/stak
 * **Phase:** Phase 7 (Listing Detail Page)
 * **Context:** For safety and privacy of students and female-only accommodations, how exact should the public Leaflet map coordinates be on the detail page?
 * **Options:**
-  * **Option A (Recommended & Implemented): Neighborhood Area Radius Circle (~200m) with disclaimer note.** Shows general vicinity, nearby universities, and transit without exposing the exact residential floor/rooftop until the student contacts the host.
+  * **Option A: Neighborhood Area Radius Circle with disclaimer note.** Shows general vicinity, nearby universities, and transit without exposing the exact residential floor/rooftop until the student contacts the host.
   * **Option B: Exact Pinpoint Pin.** Places a pin directly on exact coordinates.
-* **Status:** `🟡 Pending Review`
-* **Choice:** *(Specify Option A or Option B)*
+* **Status:** `✅ Decided`
+* **Choice:** Both Options Supported (User Choice: Exact Pin + Nearby Area Radius with Off-Centered Circle)
+* **Rationale:** Keep both options for the user to choose from. For exact location, use a pinpoint pin marker. For nearby area radius, use an off-centered circle (~260m) as visual reference for the user without revealing exact coordinates, providing neighborhood context while safeguarding resident privacy.
 
 ---
 
@@ -126,10 +128,11 @@ This document tracks design, UX, and architectural decisions requiring user/stak
 * **Phase:** Phase 7 (Listing Detail Page)
 * **Context:** How should seekers connect with hosts?
 * **Options:**
-  * **Option A (Recommended & Implemented): Action-Gated Contact Modal with Phone Copy + Call Trigger.** Requires users to be signed in to view the host's direct phone number, protecting numbers from web scrapers and unauthorized callers while displaying fraud safety reminders.
+  * **Option A: Action-Gated Contact Modal with Phone Copy + Call Trigger.** Requires users to be signed in to view the host's direct phone number, protecting numbers from web scrapers and unauthorized callers while displaying fraud safety reminders.
   * **Option B: Plain Unprotected Phone Number directly in page text.** Accessible to unauthenticated scrapers without safety prompts.
-* **Status:** `🟡 Pending Review`
-* **Choice:** *(Specify Option A or Option B)*
+* **Status:** `✅ Decided`
+* **Choice:** Option A (Action-Gated Contact Modal with User Profile Visibility Control)
+* **Rationale:** Users must log in to view host contact information, protecting against scrapers and displaying fraud safety reminders. Hosts can choose whether to display their contact information in their profile/listings; if and only if the host chooses to show it, other users can log in to view it. When disabled, users communicate via listing comments.
 
 ---
 
@@ -139,8 +142,9 @@ This document tracks design, UX, and architectural decisions requiring user/stak
 * **Options:**
   * **Option A (Recommended & Implemented): Author can delete their own comment; Host (Listing Owner) & Admin can moderate/delete any comment on their listing.** Encourages transparency while giving hosts control against spam or trolling.
   * **Option B: Only Admin can delete comments.** Reduces host control over their listing thread.
-* **Status:** `🟡 Pending Review`
-* **Choice:** *(Specify Option A or Option B)*
+* **Status:** `✅ Decided`
+* **Choice:** Option A (Author can delete own comment; Host & Admin can moderate/delete any comment on their listing)
+* **Rationale:** Preserves author rights while giving hosts and admins essential moderation authority over discussions on their property.
 
 ---
 

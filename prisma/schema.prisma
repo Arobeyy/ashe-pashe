@@ -22,6 +22,7 @@ model User {
   location     String?  // e.g. "Mirpur, Dhaka"
   bio          String?
   interests    String   @default("[]") // Serialized JSON string array: ["CSE", "Photography", "Football"]
+  showContactInfo Boolean @default(true) // Whether host allows contact info to be viewed by logged-in users
 
   role         String   @default("USER") // "USER" | "ADMIN"
   createdAt    DateTime @default(now())
@@ -49,6 +50,7 @@ model AccommodationListing {
   address       String
   latitude      Float
   longitude     Float
+  locationPrecision String @default("APPROXIMATE") // "APPROXIMATE" | "EXACT"
 
   // Classification, Tenancy & Preferences
   accommodationType String // "SEAT" | "ROOM" | "FLAT"

@@ -49,9 +49,76 @@ export async function GET(request?: NextRequest): Promise<NextResponse<ApiRespon
       location: user.location,
       bio: user.bio,
       interests: parsedInterests,
+      showContactInfo: user.showContactInfo,
       role: user.role as "USER" | "ADMIN",
       createdAt: user.createdAt.toISOString(),
       _count: user._count,
+    }
+
+    return NextResponse.json({ success: true, data: userPublic })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error"
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest): Promise<NextResponse<ApiResponse<UserPublic>>> {
+  try {
+    const session = await getSession(request)
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = (await request.json()) as Partial<UserPublic>
+    const { showContactInfo, phone, occupation, education, bio, location } = body
+
+    const updated = await db.user.update({
+      where: { id: session.userId },
+      data: {
+        ...(typeof showContactInfo === "boolean" && { showContactInfo }),
+        ...(typeof phone === "string" && { phone: phone.trim() }),
+        ...(typeof occupation === "string" && { occupation: occupation.trim() }),
+        ...(typeof education === "string" && { education: education.trim() }),
+        ...(typeof bio === "string" && { bio: bio.trim() }),
+        ...(typeof location === "string" && { location: location.trim() }),
+      },
+      include: {
+        _count: {
+          select: {
+            listings: true,
+            savedListings: true,
+            comments: true,
+          },
+        },
+      },
+    })
+
+    let parsedInterests: string[] = []
+    try {
+      const parsed = JSON.parse(updated.interests || "[]")
+      if (Array.isArray(parsed)) {
+        parsedInterests = parsed.map((item) => String(item).trim()).filter(Boolean)
+      }
+    } catch {
+      parsedInterests = []
+    }
+
+    const userPublic: UserPublic = {
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      phone: updated.phone,
+      avatarUrl: updated.avatarUrl,
+      coverUrl: updated.coverUrl,
+      occupation: updated.occupation,
+      education: updated.education,
+      location: updated.location,
+      bio: updated.bio,
+      interests: parsedInterests,
+      showContactInfo: updated.showContactInfo,
+      role: updated.role as "USER" | "ADMIN",
+      createdAt: updated.createdAt.toISOString(),
+      _count: updated._count,
     }
 
     return NextResponse.json({ success: true, data: userPublic })

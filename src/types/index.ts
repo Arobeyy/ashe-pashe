@@ -83,6 +83,7 @@ export type UserPublic = {
   location: string | null
   bio: string | null
   interests: string[]
+  showContactInfo: boolean
   role: UserRole
   createdAt: string
   _count?: {
@@ -115,6 +116,7 @@ export type ListingCard = {
   address: string
   latitude: number
   longitude: number
+  locationPrecision?: "APPROXIMATE" | "EXACT"
   accommodationType: AccommodationType
   genderPreference: GenderPreference
   tenantType: TenantType
@@ -157,7 +159,12 @@ export type ListingDetail = ListingCard & {
   balconies: number | null
   floorLevel: number | null
   moderationStatus: ModerationStatus
-  owner: Pick<UserPublic, "id" | "name" | "avatarUrl" | "occupation" | "education">
+  owner: Pick<UserPublic, "id" | "name" | "avatarUrl" | "occupation" | "education"> & {
+    phone?: string | null
+    email?: string | null
+    showContactInfo?: boolean
+  }
+  locationPrecision: "APPROXIMATE" | "EXACT"
   comments: CommentItem[]
   savedCount: number
   isSaved?: boolean
@@ -172,6 +179,7 @@ export type CreateListingInput = {
   address: string
   latitude: number
   longitude: number
+  locationPrecision?: "APPROXIMATE" | "EXACT"
   accommodationType: AccommodationType
   genderPreference?: GenderPreference
   tenantType?: TenantType

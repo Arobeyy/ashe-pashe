@@ -97,7 +97,7 @@
   * Dynamic SEO metadata generation (`generateMetadata`) with localized titles and descriptions.
   * Dedicated 404 page (`not-found.tsx`) matching design system.
 * **Photo Carousel & Lightbox (`src/components/listing/ListingGallery.tsx`):**
-  * Responsive Embla Carousel (`Carousel` from shadcn) supporting local `/uploads/` and remote URLs.
+  * DEC-008 Option A: Responsive Embla Carousel (`Carousel` from shadcn) supporting local `/uploads/` and remote URLs.
   * Photo counter overlay pill (`1 / 5`) and thumbnail strip on desktop/tablet.
   * Fullscreen dialog lightbox with keyboard and click navigation.
 * **Accommodation Details & Flat Information (`src/components/listing/ListingDetailsSection.tsx`):**
@@ -106,11 +106,12 @@
   * Collapsible flat information accordion (`Accordion` from shadcn/Base UI) for rooms, washrooms, balconies, and floor level.
 * **Interactive Neighborhood Map (`src/components/listing/ListingLocationMap.tsx`):**
   * Dynamic `ssr: false` client import.
-  * Centered at listing coordinates with a 200m area privacy circle and custom ping marker.
+  * DEC-009: User choice between Exact Location Pin and Nearby Area Radius (off-centered ~260m circle protecting resident privacy).
   * External link trigger to Google Maps for navigation.
 * **Host Card & Contact Drawer (`src/components/listing/OwnerCard.tsx`):**
   * Host avatar, name, occupation, institution, and profile link.
-  * Action-gated contact dialog with copy-to-clipboard and 1-tap call triggers + safety reminders.
+  * DEC-010 Option A: Action-gated contact dialog requiring login; respects host profile visibility setting (`showContactInfo`) with fallback to public comments.
+  * Copy-to-clipboard and 1-tap call triggers + safety reminders.
 * **Host Controls Panel (`src/components/listing/OwnerControls.tsx`):**
   * Owner and Admin moderation tools: "Mark as Rented", "Mark as Available", "Hide Listing".
   * Listing deletion with destructive confirmation dialog.
@@ -121,7 +122,7 @@
 * **Discussions & Comments Thread (`src/components/listing/CommentsSection.tsx`):**
   * Chronological comments feed with author avatars, names, and relative timestamps.
   * Action-gated comment posting via `POST /api/listings/[id]/comments`.
-  * Author & admin deletion controls via `DELETE /api/listings/[id]/comments/[commentId]`.
+  * DEC-011 Option A: Author, Host (Listing Owner), & Admin comment moderation deletion controls via `DELETE /api/listings/[id]/comments/[commentId]`.
 * **Responsive Layout Split:**
   * **Desktop (≥ 768px):** 2-column layout (wide media + details on left, sticky pricing, host card, and actions on right).
   * **Mobile (< 768px):** Touch-friendly single column with a fixed bottom sticky pricing and action bar (`bottom-16` above bottom navigation) with ≥ 44px tap targets.

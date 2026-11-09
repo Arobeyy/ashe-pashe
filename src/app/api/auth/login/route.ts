@@ -83,6 +83,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       location: user.location,
       bio: user.bio,
       interests: parsedInterests,
+      showContactInfo: user.showContactInfo,
       role: user.role as "USER" | "ADMIN",
       createdAt: user.createdAt.toISOString(),
       _count: user._count,

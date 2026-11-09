@@ -17,6 +17,7 @@ import type { Dictionary } from "@/app/[lang]/dictionaries"
 
 type CommentsSectionProps = {
   listingId: string
+  listingOwnerId?: string
   initialComments: CommentItem[]
   currentUserId?: string
   currentUserRole?: string
@@ -50,6 +51,7 @@ function formatRelativeTime(dateString: string, lang: string): string {
 
 export function CommentsSection({
   listingId,
+  listingOwnerId,
   initialComments,
   currentUserId,
   currentUserRole,
@@ -172,8 +174,10 @@ export function CommentsSection({
           </div>
         ) : (
           comments.map((comment) => {
-            const canDelete =
-              currentUserId === comment.authorId || currentUserRole === "ADMIN"
+            const isAuthor = currentUserId === comment.authorId
+            const isHost = Boolean(listingOwnerId && currentUserId === listingOwnerId)
+            const isAdmin = currentUserRole === "ADMIN"
+            const canDelete = isAuthor || isHost || isAdmin
 
             return (
               <div
