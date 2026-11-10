@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { NextResponse, type NextRequest, connection } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import type { ApiResponse } from "@/types"
@@ -6,6 +6,7 @@ import type { ApiResponse } from "@/types"
 export async function GET(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse<{ unreadCount: number }>>> {
+  await connection()
   try {
     const session = await getSession(request)
     if (!session) {

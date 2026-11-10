@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet"
 import L from "leaflet"
 import { MapPin, ExternalLink, ShieldCheck, Compass, CircleDot } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -43,14 +42,84 @@ export default function ListingLocationMap({
   const [activeMode, setActiveMode] = React.useState<"APPROXIMATE" | "EXACT">(
     locationPrecision === "EXACT" ? "EXACT" : "APPROXIMATE",
   )
-  const pinIcon = React.useMemo(() => createListingPinIcon(), [])
-  const exactPosition: [number, number] = [latitude, longitude]
+  const mapContainerRef = React.useRef<HTMLDivElement>(null)
+  const mapInstanceRef = React.useRef<L.Map | null>(null)
+  const overlayLayerRef = React.useRef<L.Layer | null>(null)
 
-  // Deterministic off-center offset (~120m) for privacy-preserving area circle
-  const offCenterCenter: [number, number] = [latitude + 0.0009, longitude - 0.0008]
-  const mapCenter = activeMode === "EXACT" ? exactPosition : offCenterCenter
+  const pinIcon = React.useMemo(() => createListingPinIcon(), [])
+  const exactPosition: [number, number] = React.useMemo(() => [latitude, longitude], [latitude, longitude])
+  const offCenterCenter: [number, number] = React.useMemo(
+    () => [latitude + 0.0009, longitude - 0.0008],
+    [latitude, longitude],
+  )
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+
+  // Initialize Leaflet map safely once on mount
+  React.useEffect(() => {
+    const container = mapContainerRef.current
+    if (!container) return
+
+    // Clean up any stale leaflet ID on the container DOM element
+    if ((container as unknown as { _leaflet_id?: number })._leaflet_id) {
+      delete (container as unknown as { _leaflet_id?: number })._leaflet_id
+    }
+
+    const initialCenter = activeMode === "EXACT" ? exactPosition : offCenterCenter
+    const initialZoom = activeMode === "EXACT" ? 15 : 14
+
+    const map = L.map(container, {
+      center: initialCenter,
+      zoom: initialZoom,
+      scrollWheelZoom: false,
+    })
+    mapInstanceRef.current = map
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map)
+
+    const resizeTimer = setTimeout(() => {
+      map.invalidateSize()
+    }, 200)
+
+    return () => {
+      clearTimeout(resizeTimer)
+      map.remove()
+      mapInstanceRef.current = null
+      if (container && (container as unknown as { _leaflet_id?: number })._leaflet_id) {
+        delete (container as unknown as { _leaflet_id?: number })._leaflet_id
+      }
+    }
+  }, [exactPosition, offCenterCenter]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Synchronize overlay layer and map view when activeMode changes without re-mounting the container
+  React.useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+
+    if (overlayLayerRef.current) {
+      map.removeLayer(overlayLayerRef.current)
+      overlayLayerRef.current = null
+    }
+
+    if (activeMode === "EXACT") {
+      map.setView(exactPosition, 15, { animate: true })
+      const marker = L.marker(exactPosition, { icon: pinIcon }).addTo(map)
+      overlayLayerRef.current = marker
+    } else {
+      map.setView(offCenterCenter, 14, { animate: true })
+      const circle = L.circle(offCenterCenter, {
+        radius: 260,
+        color: "var(--primary)",
+        fillColor: "var(--primary)",
+        fillOpacity: 0.14,
+        weight: 2,
+        dashArray: "5 5",
+      }).addTo(map)
+      overlayLayerRef.current = circle
+    }
+  }, [activeMode, exactPosition, offCenterCenter, pinIcon])
 
   return (
     <div className="space-y-3">
@@ -111,34 +180,7 @@ export default function ListingLocationMap({
       </div>
 
       <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden border border-border shadow-xs">
-        <MapContainer
-          key={activeMode}
-          center={mapCenter}
-          zoom={activeMode === "EXACT" ? 15 : 14}
-          scrollWheelZoom={false}
-          className="w-full h-full z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {activeMode === "EXACT" ? (
-            <Marker position={exactPosition} icon={pinIcon} />
-          ) : (
-            <Circle
-              center={offCenterCenter}
-              radius={260}
-              pathOptions={{
-                color: "var(--primary)",
-                fillColor: "var(--primary)",
-                fillOpacity: 0.14,
-                weight: 2,
-                dashArray: "5 5",
-              }}
-            />
-          )}
-        </MapContainer>
+        <div ref={mapContainerRef} className="w-full h-full z-0" />
       </div>
 
       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/40 border border-border/70 text-xs text-muted-foreground">
@@ -152,4 +194,3 @@ export default function ListingLocationMap({
     </div>
   )
 }
-
